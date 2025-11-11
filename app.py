@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
-from validate import login,singup
+from validate import login,signup
 
 model = joblib.load(os.path.join(os.path.dirname(__file__), "model.pkl"))
 encoder = joblib.load(os.path.join(os.path.dirname(__file__), "encoder.pkl"))
