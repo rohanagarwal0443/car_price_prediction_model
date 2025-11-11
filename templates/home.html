@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Price Prediction</title>
+    <style>
+        body {
+            font-family: "Poppins", sans-serif;
+            background: linear-gradient(135deg, #4a90e2, #9013fe);
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 0;
+        }
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+        }
+        form {
+            background: white;
+            padding: 25px 35px;
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #357ABD;
+        }
+        #result {
+            margin-top: 25px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚗 Car Price Prediction</h1>
+
+    <form id="carForm" action="/model" method="POST">
+        <!-- STATE -->
+        <label for="state">State:</label>
+        <select id="state" name="State" required>
+            <option value="">Select State</option>
+        </select>
+
+        <!-- CITY -->
+        <label for="city">City:</label>
+        <select id="city" name="City" required>
+            <option value="">Select City</option>
+        </select>
+
+        <!-- BRAND -->
+        <label for="brand">Brand:</label>
+        <select id="brand" name="Brand" required>
+            <option value="">Select Brand</option>
+        </select>
+
+        <!-- FUEL TYPE -->
+        <label for="fuel">Fuel Type:</label>
+        <select id="fuel" name="Fuel_Type" required>
+            <option>Petrol</option>
+            <option>Diesel</option>
+            <option>CNG</option>
+            <option>Electric</option>
+            <option>Hybrid</option>
+        </select>
+
+        <!-- TRANSMISSION -->
+        <label for="transmission">Transmission Type:</label>
+        <select id="transmission" name="Transmission" required>
+            <option>Manual</option>
+            <option>Automatic</option>
+        </select>
+
+        <!-- YEAR -->
+        <label for="year">Purchase Year:</label>
+        <input type="number" id="year" name="Year" required>
+
+        <!-- ENGINE -->
+        <label for="engine">Engine CC:</label>
+        <input type="number" id="engine" name="Engine_CC" required>
+
+        <!-- MILEAGE -->
+        <label for="mileage">Mileage (km/l):</label>
+        <input type="number" step="0.01" id="mileage" name="Mileage" required>
+
+        <!-- POWER -->
+        <label for="power">Power (bhp):</label>
+        <input type="number" step="0.1" id="power" name="Power" required>
+
+        <!-- SEATS -->
+        <label for="seats">Seats:</label>
+        <select id="seats" name="Seats" required>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="7">7</option>
+        </select>
+
+        <button type="submit">Predict Price</button>
+    </form>
+
+    <!-- Result will be displayed here -->
+    <div id="result">
+        {% if predicted_price %}
+            <b>Predicted Car Price:</b> ₹{{ predicted_price }}
+        {% endif %}
+    </div>
+
+    <script>
+        // State-City mapping
+        const stateCityMap = {
+            "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Tirupati"],
+            "Arunachal Pradesh": ["Itanagar", "Tawang", "Ziro", "Pasighat", "Bomdila"],
+            "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Tezpur", "North Lakhimpur"],
+            "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Darbhanga"],
+            "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Rajnandgaon"],
+            "Goa": ["Panaji", "Margao", "Vasco-da-Gama", "Mapusa", "Ponda"],
+            "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"],
+            "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Sonipat", "Ambala"],
+            "Himachal Pradesh": ["Shimla", "Manali", "Dharamshala", "Solan", "Mandi"],
+            "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Hazaribagh"],
+            "Karnataka": ["Bengaluru", "Mysuru", "Mangalore", "Hubli", "Belgaum"],
+            "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur", "Alappuzha"],
+            "Madhya Pradesh": ["Bhopal", "Indore", "Gwalior", "Jabalpur", "Ujjain"],
+            "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane"],
+            "Manipur": ["Imphal", "Thoubal", "Churachandpur", "Kakching", "Senapati"],
+            "Meghalaya": ["Shillong", "Tura", "Nongpoh", "Jowai", "Baghmara"],
+            "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Serchhip", "Mamit"],
+            "Nagaland": ["Kohima", "Dimapur", "Mokokchung", "Tuensang", "Kiphire"],
+            "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Puri", "Sambalpur"],
+            "Punjab": ["Ludhiana", "Amritsar", "Jalandhar", "Patiala", "Bathinda"],
+            "Rajasthan": ["Jaipur", "Udaipur", "Jodhpur", "Kota", "Ajmer"],
+            "Sikkim": ["Gangtok", "Namchi", "Gyalshing", "Mangan", "Singphu"],
+            "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli"],
+            "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Mahbubnagar"],
+            "Tripura": ["Agartala", "Udaipur", "Kumarghat", "Amarpur", "Khowai"],
+            "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Noida"],
+            "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Kashipur"],
+            "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri", "Asansol"],
+            "Delhi": ["New Delhi", "Dwarka", "Rohini", "Saket", "Karol Bagh"]
+        };
+
+        const brands = ["Maruti", "Hyundai", "Honda", "Tata", "Mahindra", "Toyota", "Ford", "Kia"];
+
+        const stateSelect = document.getElementById("state");
+        const citySelect = document.getElementById("city");
+        const brandSelect = document.getElementById("brand");
+
+        // Populate State dropdown
+        for (let state in stateCityMap) {
+            const option = document.createElement("option");
+            option.value = state;
+            option.textContent = state;
+            stateSelect.appendChild(option);
+        }
+
+        // Populate Brand dropdown
+        brands.forEach(b => {
+            const option = document.createElement("option");
+            option.value = b;
+            option.textContent = b;
+            brandSelect.appendChild(option);
+        });
+
+        // Update City when State changes
+        stateSelect.addEventListener("change", function() {
+            citySelect.innerHTML = "<option value=''>Select City</option>";
+            const cities = stateCityMap[this.value] || [];
+            cities.forEach(city => {
+                const option = document.createElement("option");
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            });
+        });
+    </script>
+</body>
+</html>
