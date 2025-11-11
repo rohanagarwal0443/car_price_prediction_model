@@ -34,7 +34,7 @@ def signup_api():
         password=request.form.get('password')
         phone=request.form.get('phone')
         data=(name,email,password,phone)
-        res=singup(data)
+        res=signup(data)
         if res:
             return redirect('/model')
         else:

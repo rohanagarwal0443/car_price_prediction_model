@@ -1,15 +1,16 @@
 import mysql.connector
-import os
 
-# Get DB credentials from environment variables
-DB_HOST = os.getenv("DB_HOST")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
+# Directly put your Railway DB credentials here
+DB_HOST = "shuttle.proxy.rlwy.net"       # host
+DB_PORT = 39207                           # port
+DB_USER = "root"                          # username
+DB_PASSWORD = "zfrvupbbUOqBnxBtxOqkFvqcmEFlbzjf"
+DB_NAME = "railway" 
 
 try:
     conn = mysql.connector.connect(
         host=DB_HOST,
+        port=DB_PORT,
         user=DB_USER,
         password=DB_PASSWORD,
         database=DB_NAME
@@ -27,13 +28,15 @@ def login(data: tuple):
         print("No database connection")
         return False
     try:
-        q = "SELECT * FROM users_login WHERE email=%s AND password=%s"
+        q = "SELECT * FROM users_logins WHERE email=%s AND password=%s"
         cursor.execute(q, data)
         result = cursor.fetchone()
-        return bool(result)
+        if result:
+            return True
+        else:
+            return False
     except Exception as e:
         print(e)
-        return False
 
 # Signup function
 def signup(data: tuple):
@@ -43,12 +46,12 @@ def signup(data: tuple):
     try:
         sub_data = data[1:3]  # (email, password)
         if not login(sub_data):
-            q = "INSERT INTO users_login (name, email, password, phone) VALUES (%s, %s, %s, %s)"
+            q = "INSERT INTO users_logins (name, email, password, phone) VALUES (%s, %s, %s, %s)"
             cursor.execute(q, data)
             conn.commit()
-            return cursor.rowcount > 0
+            if cursor.rowcount > 0:
+                return True
         else:
             return False
     except Exception as e:
         print(e)
-        return False
