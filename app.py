@@ -7,6 +7,7 @@ from validate import login,signup
 
 model = joblib.load(os.path.join(os.path.dirname(__file__), "model.pkl"))
 encoder = joblib.load(os.path.join(os.path.dirname(__file__), "encoder.pkl"))
+scaler = joblib.load(os.path.join(os.path.dirname(__file__), "scaler.pkl"))
 
 app=Flask(__name__)
 
@@ -54,16 +55,20 @@ def model_api():
         Power=float(request.form.get('Power'))
         Seats=int(request.form.get('Seats'))
         
-        columns = ['State','City','Brand','Fuel_Type','Transmission','Year','Engine_CC','Mileage','Power','Seats']
+        columns = ['State','City','Brand','Fuel_Type','Transmission','Year','Engine_Size','Mileage','Power','Seats']
         data=[[State,City,Brand,Fuel_Type,Transmission,Year,Engine_Size,Mileage,Power,Seats]]
         df=pd.DataFrame(data,columns=columns)
         
+        col=df.select_dtypes(include=['int','float']).columns
+        df[col]=scaler.transform(df[col])
         #encode data
         col=df.select_dtypes(include=['object','category']).columns
         encode=encoder.transform(df[col])
         encode_df=pd.DataFrame(encode,columns=encoder.get_feature_names_out(col))
         final_df=pd.concat([df.drop(columns=col,axis=1),encode_df],axis=1)
         
+        # numeric_cols = ['Year','Engine_Size','Mileage','Power','Seats']
+        # final_df = scaler.transform(final_df)
         price=model.predict(final_df)[0]
         
         if price >= 10000000:
